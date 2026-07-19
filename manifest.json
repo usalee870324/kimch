@@ -1,0 +1,16 @@
+{
+  "id": "kimchi-premium-tracker",
+  "name": "김치프리미엄 트래커",
+  "short_name": "김프&필프",
+  "description": "업비트·바이낸스·Coins.ph 김치프리미엄 실시간 비교",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

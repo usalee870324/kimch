@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>김치프리미엄 — 업비트·바이낸스·Coins.ph</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0e1116;
+    --card:#161b22;
+    --card2:#1c2330;
+    --line:#2a3342;
+    --text:#e6edf3;
+    --dim:#8b98a9;
+    --up:#f85149;
+    --down:#3fb950;
+    --kr:#5aa9e6;
+    --ph:#f4a259;
+    --bn:#f0b90b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    padding:calc(env(safe-area-inset-top,0px) + 20px) 14px 50px;
+  }
+  .wrap{max-width:680px;margin:0 auto;}
+  header{margin-bottom:18px;}
+  .eyebrow{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+  h1{font-size:21px;font-weight:800;letter-spacing:-.01em;}
+  .updated{font-size:12px;color:var(--dim);margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#3fb950;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .fxbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .fxchip{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;font-size:12px;color:var(--dim);
+    font-variant-numeric:tabular-nums;
+  }
+  .fxchip b{color:var(--text);font-weight:700;}
+
+  .err{
+    background:#2d1a1e;border:1px solid #6b2f38;color:#ffb4b4;
+    border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;
+    margin-bottom:14px;display:none;
+  }
+
+  .coin{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px;margin-bottom:12px;
+  }
+  .coin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .coin-name{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .coin-name .tick{font-size:12px;color:var(--dim);font-weight:600;}
+  .prem-badges{display:flex;gap:6px;flex-wrap:wrap;}
+  .prem{
+    font-size:13px;font-weight:800;padding:5px 10px;border-radius:8px;
+    font-variant-numeric:tabular-nums;
+  }
+  .prem.kr{background:rgba(90,169,230,.12);}
+  .prem.ph{background:rgba(244,162,89,.12);}
+  .prem .lbl{font-size:10px;font-weight:600;color:var(--dim);margin-right:4px;}
+  .pos{color:var(--up);} .neg{color:var(--down);} .zero{color:var(--dim);}
+
+  .rows{display:grid;gap:6px;}
+  .r{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--card2);border-radius:10px;padding:9px 12px;
+    font-size:13px;font-variant-numeric:tabular-nums;
+  }
+  .r .ex{display:flex;align-items:center;gap:7px;color:var(--dim);font-weight:600;}
+  .r .ex .sq{width:8px;height:8px;border-radius:3px;}
+  .sq.kr{background:var(--kr);} .sq.bn{background:var(--bn);} .sq.ph{background:var(--ph);}
+  .r .px{font-weight:700;}
+  .r .sub{font-size:11px;color:var(--dim);margin-left:6px;font-weight:400;}
+  .r.fail .px{color:#6b7688;font-weight:400;font-size:12px;}
+
+  .btn{
+    width:100%;margin-top:6px;
+    background:linear-gradient(135deg,#2ea0f0,#1b6fb8);
+    color:#fff;border:none;border-radius:12px;
+    padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .btn:disabled{opacity:.5;}
+  footer{margin-top:24px;font-size:11px;color:#5a6a7d;text-align:center;line-height:1.8;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Kimchi Premium Tracker</div>
+    <h1>김치프리미엄 실시간 비교 🇰🇷🇵🇭</h1>
+    <div class="updated"><span class="dot"></span><span id="updated">불러오는 중…</span></div>
+  </header>
+
+  <div class="fxbar">
+    <div class="fxchip">USD/KRW <b id="fx-krw">—</b></div>
+    <div class="fxchip">USD/PHP <b id="fx-php">—</b></div>
+    <div class="fxchip">기준: 바이낸스 USDT</div>
+  </div>
+
+  <div class="err" id="err"></div>
+  <div id="list"></div>
+
+  <button class="btn" id="refresh">↻ 새로고침 (30초마다 자동 갱신)</button>
+
+  <footer>
+    김프 = 국내가 ÷ (바이낸스 USDT가 × 환율) − 1<br>
+    🇰🇷 업비트(KRW) · 🇵🇭 Coins.ph Pro(PHP) · 환율: open.er-api.com<br>
+    투자 판단의 참고용이며 실제 거래 시 수수료·스프레드를 고려하세요
+  </footer>
+</div>
+
+<script>
+const COINS = [
+  { sym:'BTC',  name:'비트코인' },
+  { sym:'ETH',  name:'이더리움' },
+  { sym:'XRP',  name:'리플' },
+  { sym:'SOL',  name:'솔라나' },
+  { sym:'DOGE', name:'도지코인' },
+  { sym:'USDT', name:'테더' },
+  { sym:'USDC', name:'USD코인' },
+  { sym:'ADA',  name:'에이다' },
+  { sym:'TRX',  name:'트론' },
+  { sym:'AVAX', name:'아발란체' },
+  { sym:'LINK', name:'체인링크' },
+  { sym:'DOT',  name:'폴카닷' },
+  { sym:'BCH',  name:'비트코인캐시' },
+  { sym:'NEAR', name:'니어프로토콜' },
+  { sym:'APT',  name:'앱토스' },
+  { sym:'SUI',  name:'수이' },
+  { sym:'HBAR', name:'헤데라' },
+  { sym:'ETC',  name:'이더리움클래식' },
+  { sym:'XLM',  name:'스텔라루멘' },
+  { sym:'ATOM', name:'코스모스' },
+  { sym:'ARB',  name:'아비트럼' },
+  { sym:'POL',  name:'폴리곤' },
+  { sym:'SHIB', name:'시바이누' },
+  { sym:'PEPE', name:'페페' },
+  { sym:'UNI',  name:'유니스왑' },
+  { sym:'AAVE', name:'에이브' },
+  { sym:'ONDO', name:'온도파이낸스' },
+  { sym:'SEI',  name:'세이' },
+  { sym:'STX',  name:'스택스' },
+  { sym:'SAND', name:'샌드박스' },
+  { sym:'MANA', name:'디센트럴랜드' },
+  { sym:'ALGO', name:'알고랜드' },
+];
+const $ = id => document.getElementById(id);
+let FX = { krw:null, php:null };
+
+const fmt = (n,d=2)=> n==null?'—':n.toLocaleString('ko-KR',{maximumFractionDigits:d});
+const fmtSmart = n => n==null?'—': n>=1000?fmt(n,0): n>=1?fmt(n,2): n>=0.01?fmt(n,4): fmt(n,8);
+
+async function j(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+async function getFX(){
+  const d = await j('https://open.er-api.com/v6/latest/USD');
+  FX.krw = d.rates.KRW; FX.php = d.rates.PHP;
+  $('fx-krw').textContent = fmt(FX.krw,1)+'원';
+  $('fx-php').textContent = '₱'+fmt(FX.php,2);
+}
+
+async function getUpbit(){
+  const mkts = COINS.map(c=>'KRW-'+c.sym).join(',');
+  const d = await j('https://api.upbit.com/v1/ticker?markets='+mkts);
+  const out = {};
+  d.forEach(t=>{ out[t.market.replace('KRW-','')] = t.trade_price; });
+  return out;
+}
+
+async function getBinance(){
+  const syms = JSON.stringify(COINS.filter(c=>c.sym!=='USDT').map(c=>c.sym+'USDT'));
+  const d = await j('https://api.binance.com/api/v3/ticker/price?symbols='+encodeURIComponent(syms));
+  const out = { USDT: 1.0 }; // 테더는 달러 페그 기준값 $1.00
+  d.forEach(t=>{ out[t.symbol.slice(0,-4)] = parseFloat(t.price); });
+  return out;
+}
+
+async function fetchWithCorsFallback(url){
+  // 1) 직접 → 2) corsproxy.io → 3) allorigins 순서로 시도
+  const routes = [
+    url,
+    'https://corsproxy.io/?url=' + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+  ];
+  let lastErr;
+  for(const r of routes){
+    try{ return await j(r); }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+
+async function getCoinsPh(){
+  // 전 종목 시세를 한 번에 가져와서(호출 1회) 필요한 것만 추출
+  const d = await fetchWithCorsFallback('https://api.pro.coins.ph/openapi/quote/v1/ticker/price');
+  const out = {};
+  const want = new Set(COINS.map(c=>c.sym));
+  (Array.isArray(d)?d:[]).forEach(t=>{
+    if(t.symbol && t.symbol.endsWith('PHP')){
+      const sym = t.symbol.slice(0,-3);
+      if(want.has(sym)) out[sym] = parseFloat(t.price);
+    }
+  });
+  return out;
+}
+
+function premCell(cls, label, val){
+  if(val==null) return '';
+  const c = val>0.0005?'pos':val<-0.0005?'neg':'zero';
+  const sign = val>0?'+':'';
+  return '<span class="prem '+cls+' '+c+'"><span class="lbl">'+label+'</span>'+sign+(val*100).toFixed(2)+'%</span>';
+}
+
+function render(up, bn, cp, cpFailed){
+  const list = $('list');
+  list.innerHTML = COINS.map(c=>{
+    const u = up[c.sym], b = bn[c.sym], p = cp[c.sym];
+    const bKrw = (b!=null&&FX.krw) ? b*FX.krw : null;
+    const bPhp = (b!=null&&FX.php) ? b*FX.php : null;
+    const krPrem = (u!=null&&bKrw) ? u/bKrw-1 : null;
+    const phPrem = (p!=null&&bPhp) ? p/bPhp-1 : null;
+    return '<div class="coin">'
+      +'<div class="coin-head">'
+        +'<div class="coin-name">'+c.name+'<span class="tick">'+c.sym+'</span></div>'
+        +'<div class="prem-badges">'
+          +premCell('kr','🇰🇷 김프',krPrem)
+          +premCell('ph','🇵🇭 필프',phPrem)
+        +'</div>'
+      +'</div>'
+      +'<div class="rows">'
+        +'<div class="r"><span class="ex"><span class="sq kr"></span>업비트</span>'
+        +'<span class="px">'+(u!=null?fmtSmart(u)+'원':'—')+'</span></div>'
+        +'<div class="r"><span class="ex"><span class="sq bn"></span>바이낸스</span>'
+        +'<span class="px">$'+fmtSmart(b)+'<span class="sub">≈ '+(bKrw?fmt(bKrw,0)+'원':'')+'</span></span></div>'
+        +'<div class="r '+(p==null?'fail':'')+'"><span class="ex"><span class="sq ph"></span>Coins.ph</span>'
+        +'<span class="px">'+(p!=null?'₱'+fmtSmart(p):(cpFailed?'연결 실패':'미상장'))+'</span></div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+async function load(){
+  const btn = $('refresh');
+  btn.disabled = true;
+  $('err').style.display='none';
+  let cpFailed = false;
+  try{
+    if(!FX.krw) await getFX();
+    const [up, bn, cp] = await Promise.all([
+      getUpbit().catch(e=>{throw new Error('업비트: '+e.message)}),
+      getBinance().catch(e=>{throw new Error('바이낸스: '+e.message)}),
+      getCoinsPh().catch(e=>{cpFailed=true; return {};})
+    ]);
+    if(Object.keys(cp).length===0) cpFailed = true;
+    render(up, bn, cp, cpFailed);
+    $('updated').textContent = '업데이트: '+new Date().toLocaleTimeString('ko-KR');
+    if(cpFailed){
+      $('err').textContent = '⚠ Coins.ph 시세를 불러오지 못했습니다 (해당 거래소 API가 일부 네트워크/브라우저에서 차단될 수 있습니다). 업비트·바이낸스 김프는 정상 표시 중입니다.';
+      $('err').style.display='block';
+    }
+  }catch(e){
+    $('err').textContent = '시세를 불러오지 못했습니다: '+e.message+' — 이 앱은 Claude 미리보기에서는 작동하지 않으며, GitHub Pages 주소나 PC에 저장한 파일로 열어야 합니다.';
+    $('err').style.display='block';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+$('refresh').addEventListener('click', load);
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
