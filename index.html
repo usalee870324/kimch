@@ -245,7 +245,7 @@ function render(up, bn, cp, cpFailed){
         +'<div class="r"><span class="ex"><span class="sq bn"></span>바이낸스</span>'
         +'<span class="px">$'+fmtSmart(b)+'<span class="sub">≈ '+(bKrw?fmt(bKrw,0)+'원':'')+'</span></span></div>'
         +'<div class="r '+(p==null?'fail':'')+'"><span class="ex"><span class="sq ph"></span>Coins.ph</span>'
-        +'<span class="px">'+(p!=null?'₱'+fmtSmart(p):(cpFailed?'연결 실패':'미상장'))+'</span></div>'
+        +'<span class="px">'+(p!=null?'₱'+fmtSmart(p)+'<span class="sub">≈ '+(FX.krw&&FX.php?fmtSmart(p*FX.krw/FX.php)+'원':'')+'</span>':(cpFailed?'연결 실패':'미상장'))+'</span></div>'
       +'</div>'
     +'</div>';
   }).join('');
