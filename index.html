@@ -109,7 +109,7 @@
   <div class="err" id="err"></div>
   <div id="list"></div>
 
-  <button class="btn" id="refresh">↻ 새로고침 (30초마다 자동 갱신)</button>
+  <button class="btn" id="refresh">↻ 새로고침 (시세 1초 · Coins.ph 15초 자동)</button>
 
   <footer>
     김프 = 국내가 ÷ (바이낸스 USDT가 × 환율) − 1<br>
@@ -251,39 +251,44 @@ function render(up, bn, cp, cpFailed){
   }).join('');
 }
 
+let CP = {}, cpFailed = false, busy = false;
+
+async function loadCoinsPh(){
+  try{
+    const cp = await getCoinsPh();
+    if(Object.keys(cp).length){ CP = cp; cpFailed = false; }
+    else cpFailed = true;
+  }catch(e){ cpFailed = true; }
+}
+
 async function load(){
-  const btn = $('refresh');
-  btn.disabled = true;
-  $('err').style.display='none';
-  let cpFailed = false;
+  if(busy) return;  // 이전 호출이 안 끝났으면 이번 턴은 건너뜀
+  busy = true;
   try{
     if(!FX.krw) await getFX();
-    const [up, bn, cp] = await Promise.all([
+    const [up, bn] = await Promise.all([
       getUpbit().catch(e=>{throw new Error('업비트: '+e.message)}),
-      getBinance().catch(e=>{throw new Error('바이낸스: '+e.message)}),
-      getCoinsPh().catch(e=>{cpFailed=true; return {};})
+      getBinance().catch(e=>{throw new Error('바이낸스: '+e.message)})
     ]);
-    if(Object.keys(cp).length===0) cpFailed = true;
-    render(up, bn, cp, cpFailed);
+    render(up, bn, CP, cpFailed);
     $('updated').textContent = '업데이트: '+new Date().toLocaleTimeString('ko-KR');
-    if(cpFailed){
-      $('err').textContent = '⚠ Coins.ph 시세를 불러오지 못했습니다 (해당 거래소 API가 일부 네트워크/브라우저에서 차단될 수 있습니다). 업비트·바이낸스 김프는 정상 표시 중입니다.';
-      $('err').style.display='block';
-    }
+    $('err').style.display='none';
   }catch(e){
     $('err').textContent = '시세를 불러오지 못했습니다: '+e.message+' — 이 앱은 Claude 미리보기에서는 작동하지 않으며, GitHub Pages 주소나 PC에 저장한 파일로 열어야 합니다.';
     $('err').style.display='block';
   }finally{
-    btn.disabled = false;
+    busy = false;
   }
 }
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
-$('refresh').addEventListener('click', load);
-load();
-setInterval(load, 30000);
+$('refresh').addEventListener('click', ()=>{ loadCoinsPh().then(load); });
+loadCoinsPh().then(load);
+setInterval(load, 1000);          // 업비트·바이낸스: 1초
+setInterval(loadCoinsPh, 15000);  // Coins.ph(프록시 경유): 15초
+setInterval(getFX, 600000);       // 환율: 10분
 </script>
 </body>
 </html>
