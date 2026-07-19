@@ -109,10 +109,11 @@
   <div class="err" id="err"></div>
   <div id="list"></div>
 
-  <button class="btn" id="refresh">↻ 새로고침 (시세 1초 · Coins.ph 15초 자동)</button>
+  <button class="btn" id="refresh">↻ 새로고침 (15초마다 자동 갱신)</button>
 
   <footer>
-    김프 = 국내가 ÷ (바이낸스 USDT가 × 환율) − 1<br>
+    김프 = 업비트가 ÷ (바이낸스 USDT가 × 환율) − 1<br>
+    필프 = 업비트가 ÷ (Coins.ph 원화환산가) − 1 &nbsp;(+ = 업비트가 더 비쌈)<br>
     🇰🇷 업비트(KRW) · 🇵🇭 Coins.ph Pro(PHP) · 환율: open.er-api.com<br>
     투자 판단의 참고용이며 실제 거래 시 수수료·스프레드를 고려하세요
   </footer>
@@ -228,9 +229,9 @@ function render(up, bn, cp, cpFailed){
   list.innerHTML = COINS.map(c=>{
     const u = up[c.sym], b = bn[c.sym], p = cp[c.sym];
     const bKrw = (b!=null&&FX.krw) ? b*FX.krw : null;
-    const bPhp = (b!=null&&FX.php) ? b*FX.php : null;
+    const pKrw = (p!=null&&FX.krw&&FX.php) ? p*FX.krw/FX.php : null;
     const krPrem = (u!=null&&bKrw) ? u/bKrw-1 : null;
-    const phPrem = (p!=null&&bPhp) ? p/bPhp-1 : null;
+    const phPrem = (u!=null&&pKrw) ? u/pKrw-1 : null;
     return '<div class="coin">'
       +'<div class="coin-head">'
         +'<div class="coin-name">'+c.name+'<span class="tick">'+c.sym+'</span></div>'
@@ -286,9 +287,8 @@ if('serviceWorker' in navigator){
 }
 $('refresh').addEventListener('click', ()=>{ loadCoinsPh().then(load); });
 loadCoinsPh().then(load);
-setInterval(load, 1000);          // 업비트·바이낸스: 1초
-setInterval(loadCoinsPh, 15000);  // Coins.ph(프록시 경유): 15초
-setInterval(getFX, 600000);       // 환율: 10분
+setInterval(()=>{ loadCoinsPh().then(load); }, 15000);  // 전체 시세: 15초
+setInterval(getFX, 600000);                             // 환율: 10분
 </script>
 </body>
 </html>
