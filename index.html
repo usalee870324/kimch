@@ -204,15 +204,19 @@ async function fetchWithCorsFallback(url){
 }
 
 async function getCoinsPh(){
-  // 전 종목 시세를 한 번에 가져와서(호출 1회) 필요한 것만 추출
-  const d = await fetchWithCorsFallback('https://api.pro.coins.ph/openapi/quote/v1/ticker/price');
+  // 실시간 호가창(bookTicker)의 매수/매도 중간값 사용 — 거래 끊긴 마켓의 낡은 체결가 문제 방지
+  const d = await fetchWithCorsFallback('https://api.pro.coins.ph/openapi/quote/v1/ticker/bookTicker');
   const out = {};
   const want = new Set(COINS.map(c=>c.sym));
   (Array.isArray(d)?d:[]).forEach(t=>{
-    if(t.symbol && t.symbol.endsWith('PHP')){
-      const sym = t.symbol.slice(0,-3);
-      if(want.has(sym)) out[sym] = parseFloat(t.price);
-    }
+    if(!t.symbol || !t.symbol.endsWith('PHP')) return;
+    const sym = t.symbol.slice(0,-3);
+    if(!want.has(sym)) return;
+    const bid = parseFloat(t.bidPrice), ask = parseFloat(t.askPrice);
+    if(!(bid>0) || !(ask>0)) return;               // 호가 없는 죽은 마켓 제외
+    const spread = (ask-bid)/((ask+bid)/2);
+    if(spread > 0.05) return;                       // 스프레드 5% 초과(비유동) 마켓 제외
+    out[sym] = (bid+ask)/2;
   });
   return out;
 }
@@ -227,7 +231,15 @@ function premCell(cls, label, val){
 function render(up, bn, cp, cpFailed){
   const list = $('list');
   // 3개 거래소(업비트·바이낸스·Coins.ph) 모두 상장된 코인만 표시
-  let show = COINS.filter(c => cp[c.sym]!=null && up[c.sym]!=null && bn[c.sym]!=null);
+  let show = COINS.filter(c => {
+    if(cp[c.sym]==null || up[c.sym]==null || bn[c.sym]==null) return false;
+    // Coins.ph 가격이 바이낸스 환산가와 20% 이상 벌어지면 비정상(비유동) 데이터로 보고 제외
+    if(FX.php){
+      const dev = Math.abs(cp[c.sym]/(bn[c.sym]*FX.php) - 1);
+      if(dev > 0.20) return false;
+    }
+    return true;
+  });
   if(show.length===0) show = COINS; // Coins.ph 연결 실패 시 임시로 전체 표시
   list.innerHTML = show.map(c=>{
     const u = up[c.sym], b = bn[c.sym], p = cp[c.sym];
