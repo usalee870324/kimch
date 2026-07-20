@@ -226,7 +226,10 @@ function premCell(cls, label, val){
 
 function render(up, bn, cp, cpFailed){
   const list = $('list');
-  list.innerHTML = COINS.map(c=>{
+  // 3개 거래소(업비트·바이낸스·Coins.ph) 모두 상장된 코인만 표시
+  let show = COINS.filter(c => cp[c.sym]!=null && up[c.sym]!=null && bn[c.sym]!=null);
+  if(show.length===0) show = COINS; // Coins.ph 연결 실패 시 임시로 전체 표시
+  list.innerHTML = show.map(c=>{
     const u = up[c.sym], b = bn[c.sym], p = cp[c.sym];
     const bKrw = (b!=null&&FX.krw) ? b*FX.krw : null;
     const pKrw = (p!=null&&FX.krw&&FX.php) ? p*FX.krw/FX.php : null;
@@ -245,8 +248,10 @@ function render(up, bn, cp, cpFailed){
         +'<span class="px">'+(u!=null?fmtSmart(u)+'원':'—')+'</span></div>'
         +'<div class="r"><span class="ex"><span class="sq bn"></span>바이낸스</span>'
         +'<span class="px">$'+fmtSmart(b)+'<span class="sub">≈ '+(bKrw?fmt(bKrw,0)+'원':'')+'</span></span></div>'
-        +'<div class="r '+(p==null?'fail':'')+'"><span class="ex"><span class="sq ph"></span>Coins.ph</span>'
-        +'<span class="px">'+(p!=null?'₱'+fmtSmart(p)+'<span class="sub">≈ '+(FX.krw&&FX.php?fmtSmart(p*FX.krw/FX.php)+'원':'')+'</span>':(cpFailed?'연결 실패':'미상장'))+'</span></div>'
+        +(p!=null
+          ? '<div class="r"><span class="ex"><span class="sq ph"></span>Coins.ph</span>'
+            +'<span class="px">₱'+fmtSmart(p)+'<span class="sub">≈ '+(FX.krw&&FX.php?fmtSmart(p*FX.krw/FX.php)+'원':'')+'</span></span></div>'
+          : '')
       +'</div>'
     +'</div>';
   }).join('');
